@@ -1,314 +1,101 @@
-ROUND = 5
-player_score = 0
-com_score = 0  # tic for tac
+from itertools import product
+from strategy import Strategy
+from util import *
 
-PLAYER = 0
-COM = 1
+strategies = Strategy().strategies
 
-COOPERATE = 1  # 협력
-BETRAY = 0  # 배반
-BOARD = [[[0, 0], [3, -1]], [[-1, 3], [2, 2]]]
+play = True
 
+while play:
+    print("**************************************************************")
+    print("* 게임 모드를 선택하세요!                                    *")
+    print("* 1: 상대 전략에 대응하는 최적의 수 찾기 (YOU vs COMPUTER)   *")
+    print("* 2: 전략들 승률 분석 (COMPUTER vs COMPUTER)                 *")
+    print("* 0: 프로그램 종료                                           *")
+    print("**************************************************************\n")
+    mode = int(input("선택: "))
 
-def ticfortat(round, previous_player_select):
-    if round == 1:
-        return COOPERATE
-    return previous_player_select
+    if mode == 0:
+        play = False
+        continue
 
+    elif mode == 1:
+        match = int(input("round 수를 설정하세요. "))
+        strategy = int(input("상대방의 전략을 선택하세요. 0~5 "))
+        select_strategy = strategies[strategy]
+        print(f"상대방의 전략: {select_strategy.__name__}")
+        print()
 
-def always_betray():
-    return BETRAY
+        for i in range(match):
+            scores = []
+            for candidate in list(product(range(2), repeat=match)):
+                score_board = [0] * 2
+                minmax_calculate(
+                    2,
+                    match,
+                    candidate,
+                    select_strategy,
+                    score_board,
+                    PLAYER_ONE,
+                    PLAYER_TWO,
+                )
+                scores.append(score_board[PLAYER_ONE])
+            max_score = max(scores)
+            min_score = min(scores)
 
+        score_board = [0] * 2
+        is_log = True
+        battle(
+            2,
+            match,
+            strategy_class.player,
+            select_strategy,
+            score_board,
+            PLAYER_ONE,
+            PLAYER_TWO,
+            is_log,
+        )
 
-def always_cooperate():
-    return COOPERATE
+        print(f"내 점수: {score_board[0]}")
+        print(f"얻을 수 있었던 최대 점수: {max_score}")
+        print(f"얻을 수 있었던 최소 점수: {min_score}")
+        print()
 
+    elif mode == 2:
+        is_log = False
+        round_num = int(input("몇 라운드 간 진행할까요?"))
 
-def grudge(round, is_betrayed):
-    if round == 1:
-        return COOPERATE
-    if is_betrayed:
-        return BETRAY
-    return COOPERATE
+        winning = [0] * len(strategies)
+        total_score = [0] * len(strategies)
 
+        for i in range(len(strategies) - 1):
+            for j in range(i + 1, len(strategies)):
+                score_board = [0] * 2
+                battle(
+                    3,
+                    round_num,
+                    strategies[i],
+                    strategies[j],
+                    score_board,
+                    0,
+                    1,
+                    is_log,
+                )
+                if score_board[0] > score_board[1]:
+                    winning[strategies.index(strategies[i])] += 1
+                total_score[strategies.index(strategies[i])] += score_board[0]
+                total_score[strategies.index(strategies[j])] += score_board[1]
 
-def prober(round, is_betrayed, previous_player_select):
-    if round == 1 or round == 3 or round == 4:
-        return COOPERATE
-    elif round == 2:
-        return BETRAY
-    else:  # 5라운드 이후
-        if is_betrayed:
-            return ticfortat(round, previous_player_select)
-        else:
-            return BETRAY
+        print(winning)
+        print(total_score)
+        print(
+            f"가장 승률이 가장 높은 전략: {strategies[winning.index(max(winning))].__name__.capitalize()}"
+        )
+        print(
+            f"최종 점수가 가장 높은 전략: {strategies[total_score.index(max(total_score))].__name__.capitalize()}"
+        )
+        print()
 
-
-def calculate(player_select, com_select):
-    global player_score, com_score
-    player_score += BOARD[player_select][com_select][PLAYER]
-    com_score += BOARD[player_select][com_select][COM]
-
-
-def calculate_com(p1_select, p2_select, p1_index, p2_index):
-    global score_board
-    score_board[p1_index] += BOARD[p1_select][p2_select][0]
-    score_board[p2_index] += BOARD[p1_select][p2_select][1]
-
-
-"""
-previous_player_select = None
-is_betrayed = False
-for i in range(1, ROUND + 1):
-    player_select = int(input("배반: 0, 협력: 1 >> "))
-    com_select = ticfortat(i, previous_player_select)
-    calculate(player_select, com_select)
-    if player_select == BETRAY:
-        is_betrayed = True
-    previous_player_select = player_select
-    print(f"ticfortat/{i}round # player score: {player_score}")
-
-ROUND = 4
-previous_player_select = None
-is_betrayed = False
-for i in range(1, ROUND + 1):
-    player_select = int(input("배반: 0, 협력: 1 >> "))
-    com_select = always_betray()
-    calculate(player_select, com_select)
-    if player_select == BETRAY:
-        is_betrayed = True
-    previous_player_select = player_select
-    print(f"always_bet/{i}round # player score: {player_score}")
-
-ROUND = 4
-previous_player_select = None
-is_betrayed = False
-for i in range(1, ROUND + 1):
-    player_select = int(input("배반: 0, 협력: 1 >> "))
-    com_select = always_cooperate()
-    calculate(player_select, com_select)
-    if player_select == BETRAY:
-        is_betrayed = True
-    previous_player_select = player_select
-    print(f"always_coop/{i}round # player score: {player_score}")
-
-ROUND = 5
-previous_player_select = None
-is_betrayed = False
-for i in range(1, ROUND + 1):
-    player_select = int(input("배반: 0, 협력: 1 >> "))
-    com_select = grudge(i, is_betrayed)
-    calculate(player_select, com_select)
-    if player_select == BETRAY:
-        is_betrayed = True
-    previous_player_select = player_select
-    print(f"grudge/{i}round # player score: {player_score}")
-
-ROUND = 7
-previous_player_select = None
-is_betrayed = False
-for i in range(1, ROUND + 1):
-    player_select = int(input("배반: 0, 협력: 1 >> "))
-    com_select = prober(i, is_betrayed, previous_player_select)
-    calculate(player_select, com_select)
-    if player_select == BETRAY:
-        is_betrayed = True
-    previous_player_select = player_select
-    print(f"prober/{i}round # player score: {player_score}")
-
-print()
-print("***** 경기 종료 *****")
-print(f"PLAYER: {player_score}점")
-print(f"COMPUTER: {com_score}점")
-
-"""
-
-###################### 2번째 게임
-
-
-# 0:tft 1:always_bet 2:always_coop 3:grudge 4:prober
-score_board = [0] * 5
-STRATEGY = ["Tic for Tat", "Always Betray", "Always Cooperate", "Grudge", "Prober"]
-
-# tft(0) vs always_bet(1)
-ROUND = 10
-p1_previous = None
-p1_is_betrayed = False
-p2_previous = None
-p2_is_betrayed = False
-for i in range(1, ROUND + 1):
-    p1_select = ticfortat(i, p2_previous)
-    p2_select = always_betray()
-    calculate_com(p1_select, p2_select, 0, 1)
-    if p1_select == BETRAY:
-        p1_is_betrayed = True
-    if p2_select == BETRAY:
-        p2_is_betrayed = True
-    p1_previous = p1_select
-    p2_previous = p2_select
-
-
-# tft(0) vs always_coop(2)
-ROUND = 10
-p1_previous = None
-p1_is_betrayed = False
-p2_previous = None
-p2_is_betrayed = False
-for i in range(1, ROUND + 1):
-    p1_select = ticfortat(i, p2_previous)
-    p2_select = always_cooperate()
-    calculate_com(p1_select, p2_select, 0, 2)
-    if p1_select == BETRAY:
-        p1_is_betrayed = True
-    if p2_select == BETRAY:
-        p2_is_betrayed = True
-    p1_previous = p1_select
-    p2_previous = p2_select
-
-
-# tft(0) vs grudge(3)
-ROUND = 10
-p1_previous = None
-p1_is_betrayed = False
-p2_previous = None
-p2_is_betrayed = False
-for i in range(1, ROUND + 1):
-    p1_select = ticfortat(i, p2_previous)
-    p2_select = grudge(i, p1_is_betrayed)
-    calculate_com(p1_select, p2_select, 0, 3)
-    if p1_select == BETRAY:
-        p1_is_betrayed = True
-    if p2_select == BETRAY:
-        p2_is_betrayed = True
-    p1_previous = p1_select
-    p2_previous = p2_select
-
-
-# tft(0) vs prober(4)
-ROUND = 10
-p1_previous = None
-p1_is_betrayed = False
-p2_previous = None
-p2_is_betrayed = False
-for i in range(1, ROUND + 1):
-    p1_select = ticfortat(i, p2_previous)
-    p2_select = prober(i, p1_is_betrayed, p1_previous)
-    calculate_com(p1_select, p2_select, 0, 4)
-    if p1_select == BETRAY:
-        p1_is_betrayed = True
-    if p2_select == BETRAY:
-        p2_is_betrayed = True
-    p1_previous = p1_select
-    p2_previous = p2_select
-
-
-# always_bet(1) vs always_coop(2)
-ROUND = 10
-p1_previous = None
-p1_is_betrayed = False
-p2_previous = None
-p2_is_betrayed = False
-for i in range(1, ROUND + 1):
-    p1_select = always_betray()
-    p2_select = always_cooperate()
-    calculate_com(p1_select, p2_select, 1, 2)
-    if p1_select == BETRAY:
-        p1_is_betrayed = True
-    if p2_select == BETRAY:
-        p2_is_betrayed = True
-    p1_previous = p1_select
-    p2_previous = p2_select
-
-
-# always_bet(1) vs grudge(3)
-ROUND = 10
-p1_previous = None
-p1_is_betrayed = False
-p2_previous = None
-p2_is_betrayed = False
-for i in range(1, ROUND + 1):
-    p1_select = always_betray()
-    p2_select = grudge(i, p1_is_betrayed)
-    calculate_com(p1_select, p2_select, 1, 3)
-    if p1_select == BETRAY:
-        p1_is_betrayed = True
-    if p2_select == BETRAY:
-        p2_is_betrayed = True
-    p1_previous = p1_select
-    p2_previous = p2_select
-
-
-# always_bet(1) vs prober(4)
-ROUND = 10
-p1_previous = None
-p1_is_betrayed = False
-p2_previous = None
-p2_is_betrayed = False
-for i in range(1, ROUND + 1):
-    p1_select = always_betray()
-    p2_select = prober(i, p1_is_betrayed, p1_previous)
-    calculate_com(p1_select, p2_select, 1, 4)
-    if p1_select == BETRAY:
-        p1_is_betrayed = True
-    if p2_select == BETRAY:
-        p2_is_betrayed = True
-    p1_previous = p1_select
-    p2_previous = p2_select
-
-
-# always_coop(2) vs grudge(3)
-ROUND = 10
-p1_previous = None
-p1_is_betrayed = False
-p2_previous = None
-p2_is_betrayed = False
-for i in range(1, ROUND + 1):
-    p1_select = always_cooperate()
-    p2_select = grudge(i, p1_is_betrayed)
-    calculate_com(p1_select, p2_select, 2, 3)
-    if p1_select == BETRAY:
-        p1_is_betrayed = True
-    if p2_select == BETRAY:
-        p2_is_betrayed = True
-    p1_previous = p1_select
-    p2_previous = p2_select
-
-
-# always_coop(2) vs prober(4)
-ROUND = 10
-p1_previous = None
-p1_is_betrayed = False
-p2_previous = None
-p2_is_betrayed = False
-for i in range(1, ROUND + 1):
-    p1_select = always_cooperate()
-    p2_select = prober(i, p1_is_betrayed, p1_previous)
-    calculate_com(p1_select, p2_select, 2, 4)
-    if p1_select == BETRAY:
-        p1_is_betrayed = True
-    if p2_select == BETRAY:
-        p2_is_betrayed = True
-    p1_previous = p1_select
-    p2_previous = p2_select
-
-
-# grudge(3) vs prober(4)
-ROUND = 10
-p1_previous = None
-p1_is_betrayed = False
-p2_previous = None
-p2_is_betrayed = False
-for i in range(1, ROUND + 1):
-    p1_select = grudge(i, p2_is_betrayed)
-    p2_select = prober(i, p1_is_betrayed, p1_previous)
-    calculate_com(p1_select, p2_select, 3, 4)
-    if p1_select == BETRAY:
-        p1_is_betrayed = True
-    if p2_select == BETRAY:
-        p2_is_betrayed = True
-    p1_previous = p1_select
-    p2_previous = p2_select
-
-for i in range(5):
-    print(f"{STRATEGY[i]}: {score_board[i]}")
-print(f"우승: {STRATEGY[score_board.index(max(score_board))]}")
+    else:
+        print("잘못 입력하셨습니다.")
+        print()

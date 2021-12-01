@@ -32,6 +32,7 @@ while play:
     if mode == 0:
         print("종료합니다.")
         play = False
+        continue
 
     # mode 1: YOU vs COM - 최적의 수 찾기
     elif mode == 1:

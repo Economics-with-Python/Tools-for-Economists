@@ -85,6 +85,7 @@ class Strategy:
         while ok:
             select = input(f"TOTAL {total_round} ROUND\n# ROUND {match}\n배반: 0, 협력: 1 >> ")
             system("clear")
+            # system("cls")
             log_by_number(strategy_number, "상대방의 전략: ")
             log_credit()
             if select != "0" and select != "1":

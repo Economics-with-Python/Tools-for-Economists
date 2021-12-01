@@ -14,6 +14,7 @@ play = True
 
 while play:
     system("clear")
+    # system("cls")
     print("**************************************************************")
     print("* 게임 모드를 선택하세요!                                    *")
     print("* 1: 상대 전략에 대응하는 최적의 수 찾기 (YOU vs COMPUTER)   *")
@@ -36,6 +37,7 @@ while play:
     elif mode == 1:
         match = int(input("총 ROUND수를 설정하세요. >> "))
         system("clear")
+        # system("cls")
         log_tft("0: ")
         log_betray("1: ")
         log_coop("2: ")
@@ -44,6 +46,7 @@ while play:
         strategy = int(input("상대방의 전략을 선택하세요. (0~4) >> "))
         select_strategy = strategies[strategy]
         system("clear")
+        # system("cls")
         log_by_number(strategy, "상대방의 전략: ")
         log_credit()
 
@@ -118,6 +121,7 @@ while play:
                 total_score[strategies.index(strategies[j])] += score_board[1]
 
         print()
+        print(f"ROUND {round_num}")
         for i in range(len(total_score)):
             print(f"{total_score[i]}\t{strategies_full_name[i]}")
         print(
@@ -153,6 +157,7 @@ while play:
                     total_score[strategies.index(strategies[j])] += score_board[1]
 
             system("clear")
+            # system("cls")
             print(f"ROUND {round_num}")
             for i in range(len(total_score)):
                 print(f"{total_score[i]}\t{strategies_full_name[i]}")
